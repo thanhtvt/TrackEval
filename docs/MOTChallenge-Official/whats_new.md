@@ -33,7 +33,6 @@ python scripts/run_mot_challenge.py --BENCHMARK MOT17 --SPLIT_TO_EVAL train --TR
 ```  
   
 **Some note:**
-- `--SPLIT_TO_EVAL` is not needed when your benchmark doesn't split into different sets.
 - `--TRACKER_TO_EVAL` is the name of the folder that inside `TrackEval\data\trackers\mot_challenge\<YourChallenge>\` folder
 - `--METRICS` must have `CLEAR` as its param for extracting frames and getting heatmap
   
