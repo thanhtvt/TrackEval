@@ -310,7 +310,7 @@ def get_heatmap_utils(path_to_read):
     _, bbox = read_file(path_to_read)
 
     directory = 'output/heatmap/'
-    delete_images(directory)
+    #delete_images(directory)
 
     while running:
         ret, frame = cap.read()
