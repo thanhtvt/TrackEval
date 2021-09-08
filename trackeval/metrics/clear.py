@@ -153,7 +153,7 @@ class CLEAR(_BaseMetric):
             # Write id switch frames
             if idsw and np.sum(is_idsw) > 0:
                 # Get id of pedestrian before and after switching
-                idsw_tracker_ids = list(np.where(is_idsw == 1))         # pos of switched id in is_idsw
+                idsw_tracker_ids = tuple(np.where(is_idsw == 1))        # pos of switched id in is_idsw
                 gt_idsw = matched_gt_ids[idsw_tracker_ids]              # id of human in groundtruth
                 prev_idsw = prev_matched_tracker_ids[idsw_tracker_ids]  # id before being switched
                 after_idsw = matched_tracker_ids[idsw_tracker_ids]      # id after being switched
@@ -191,7 +191,10 @@ class CLEAR(_BaseMetric):
                 # Write frame that pedestrian's last appearance
                 for id_after_switch in curr_id_to_prev_info.keys():
                     id_before_switch = curr_id_to_prev_info.get(id_after_switch)[0]
-                    prev_frame = curr_id_to_prev_info.get(id_after_switch)[1]
+                    if curr_id_to_prev_info.get(id_after_switch)[1] == 2:
+                        prev_frame = 1  # Handling special case
+                    else:
+                        prev_frame = curr_id_to_prev_info.get(id_after_switch)[1]
                     pos = list(curr_id_to_prev_info.keys()).index(id_after_switch)
                     idsw_file.write(str(t + 1 - prev_frame) + ' ' + str(gt_idsw[pos]) + ' ' + str(id_before_switch))
                     idsw_tracker_to_tracker_id = np.where(data['tracker_ids'][t - prev_frame] == id_before_switch)
