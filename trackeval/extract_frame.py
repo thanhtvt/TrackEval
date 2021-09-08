@@ -108,8 +108,8 @@ def get_bounding_box(image, ids_boxes, frame_no):
         if i % 6 == 5:
             bbox_id_gt = ids_boxes[i - 5]
             bbox_id = ids_boxes[i - 4]
-            bbox_left = ids_boxes[i - 3]
-            bbox_top = ids_boxes[i - 2]
+            bbox_left = ids_boxes[i - 3] if ids_boxes[i - 3] >= 0 else 0
+            bbox_top = ids_boxes[i - 2] if ids_boxes[i - 2] >= 0 else 0
             bbox_right = ids_boxes[i - 1]
             bbox_bottom = ids_boxes[i]
 
@@ -320,7 +320,7 @@ def get_heatmap_utils(path_to_read):
 
         filename = directory + path_to_read[11:-4] + '.jpg'
         print("filename: ", filename)
-        save_fig(directory, frame, filename)
+        cv2.imwrite(filename, frame)
 
         running = False
 
@@ -341,9 +341,6 @@ def get_heatmap(heat, gt_file, tracker_file):
     code_path = get_code_path()
     if os.getcwd() != code_path:
         os.chdir(code_path)
-
-    # Delete existed images
-    delete_images('output/heatmap/')
 
     if heat[0]:
         print('\nGetting heatmap of FP...')
@@ -523,14 +520,12 @@ def get_idsw_frames_utils(path_to_read):
     while True:
         ret, frame = cap.read()
         curr_frame += 1
-
         if not ret:
             break
 
         if idx < size and curr_frame == list(frame_to_ids_boxes)[idx]:
             get_bounding_box(frame, frame_to_ids_boxes[curr_frame], curr_frame)
             draw_idsw_rectangle(frame, frame_to_ids_boxes[curr_frame], curr_frame)
-
             idx += 1
 
     attach_images('output/idsw', 'output/idsw/attach', (1280, 720))
