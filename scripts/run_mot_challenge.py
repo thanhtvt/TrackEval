@@ -117,7 +117,7 @@ if __name__ == '__main__':
                 heatmap_bool[1] = True
             elif elem == 'PRED':
                 heatmap_bool[2] = True
-            elif elem == 'IDSW': # son add this
+            elif elem == 'IDSW':    # Son add this
                 heatmap_bool[3] = True
             else:
                 heatmap_bool[4] = True
@@ -127,14 +127,23 @@ if __name__ == '__main__':
 
     evaluator.evaluate(dataset_list, metrics_list)
 
-    # Get square images showing FN/FP boxes
-    extract_frame.get_square_frame(extr_bool)
+    for gt_filepath, tracker_filepath, tracker_name, seq_name in dataset_list[0].get_files_loc_and_names():
+        # Update filepath
+        for key in extract_frame.filepath.keys():
+            extract_frame.filepath[key] = extract_frame.filepath[key].format(tracker_name, seq_name)
+        # Update start point to get string
+        extract_frame.start_pt = len('boxdetails') + len(tracker_name) + len(seq_name) + len('/') * 3
 
-    # Get heatmap
-    gt_file = dataset_list[0].get_gt_file()
-    tracker_file = dataset_list[0].get_tracker_file()
-    print(tracker_file)
-    extract_frame.get_heatmap(heatmap_bool, gt_file, tracker_file)
+        # Refer to global vars in extract_frame.py
+        extract_frame.tracker_name = tracker_name
+        extract_frame.seq_name = seq_name
 
-    # Get idsw
-    extract_frame.get_idsw_frame(trackeval.metrics.clear.idsw)
+        # Get square images showing FN/FP boxes
+        extract_frame.get_square_frame(extr_bool)
+        # Get heatmap
+        extract_frame.get_heatmap(heatmap_bool, gt_filepath, tracker_filepath)
+        # Get idsw
+        extract_frame.get_idsw_frame(trackeval.metrics.clear.idsw)
+
+        # Return to initial dict
+        extract_frame.filepath = extract_frame.copy_filepath.copy()
