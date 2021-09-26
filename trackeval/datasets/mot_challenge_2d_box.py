@@ -125,13 +125,12 @@ class MotChallenge2DBox(_BaseDataset):
                             'Tracker file not found: ' + tracker + '/' + self.tracker_sub_fol + '/' + os.path.basename(
                                 curr_file))
 
-    # Need to fix to get every path
-    def get_gt_file(self):
-        return self.config["GT_LOC_FORMAT"].format(gt_folder=self.gt_fol, seq=self.seq_list[0])
-
-    # Need to fix to get every path
-    def get_tracker_file(self):
-        return os.path.join(self.tracker_fol, self.tracker_list[0], self.tracker_sub_fol, self.seq_list[0] + '.txt')
+    def get_files_loc_and_names(self):
+        for tracker in self.tracker_list:
+            for seq in self.seq_list:
+                tracker_file = os.path.join(self.tracker_fol, tracker, self.tracker_sub_fol, seq + '.txt')
+                gt_file = self.config["GT_LOC_FORMAT"].format(gt_folder=self.gt_fol, seq=seq)
+                yield gt_file, tracker_file, tracker, seq
 
     def get_display_name(self, tracker):
         return self.tracker_to_disp[tracker]
@@ -230,7 +229,7 @@ class MotChallenge2DBox(_BaseDataset):
                     [str(x) + ', ' for x in extra_time_keys]))
 
         for t in range(num_timesteps):
-            time_key = str(t+1)
+            time_key = str(t + 1)
             if time_key in read_data.keys():
                 try:
                     time_data = np.asarray(read_data[time_key], dtype=np.float)
@@ -371,12 +370,12 @@ class MotChallenge2DBox(_BaseDataset):
                 invalid_classes = np.setdiff1d(np.unique(gt_classes), self.valid_class_numbers)
                 if len(invalid_classes) > 0:
                     print(' '.join([str(x) for x in invalid_classes]))
-                    raise(TrackEvalException('Attempting to evaluate using invalid gt classes. '
-                                             'This warning only triggers if preprocessing is performed, '
-                                             'e.g. not for MOT15 or where prepropressing is explicitly disabled. '
-                                             'Please either check your gt data, or disable preprocessing. '
-                                             'The following invalid classes were found in timestep ' + str(t) + ': ' +
-                                             ' '.join([str(x) for x in invalid_classes])))
+                    raise (TrackEvalException('Attempting to evaluate using invalid gt classes. '
+                                              'This warning only triggers if preprocessing is performed, '
+                                              'e.g. not for MOT15 or where prepropressing is explicitly disabled. '
+                                              'Please either check your gt data, or disable preprocessing. '
+                                              'The following invalid classes were found in timestep ' + str(t) + ': ' +
+                                              ' '.join([str(x) for x in invalid_classes])))
 
                 matching_scores = similarity_scores.copy()
                 matching_scores[matching_scores < 0.5 - np.finfo('float').eps] = 0
