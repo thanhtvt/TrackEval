@@ -6,6 +6,28 @@ from .utils import get_code_path
 
 """----General utils----"""
 
+# Global variables
+tracker_name = ""
+seq_name = ""
+start_pt = 0
+
+# File path storage
+code_path = get_code_path()
+filepath = {'DET_VIDEO': 'video/{}/{}/detection.mp4',
+            'RAW_VIDEO': 'video/{}/{}/raw.mp4',
+            'FP_DETAILS': 'boxdetails/{}/{}/fp.txt',
+            'FN_DETAILS': 'boxdetails/{}/{}/fn.txt',
+            'IDSW_DETAILS': 'boxdetails/{}/{}/idsw.txt',
+            'IDSW_HEAT': 'boxdetails/{}/{}/idsw_heatmap.txt',
+            'GT_DETAILS': 'boxdetails/{}/{}/gt.txt',
+            'PRED_DETAILS': 'boxdetails/{}/{}/pred.txt',
+            'EXTRACTOR_OUTPUT': 'output/{}/{}/square_images/',
+            'HEATMAP_OUTPUT': 'output/{}/{}/heatmap/',
+            'IDSW_OUTPUT': 'output/{}/{}/idsw/',
+            'IDSW_BBOX_OUTPUT': 'output/{}/{}/idsw/bbox_idsw/',
+            'IDSW_ATTACH_OUTPUT': 'output/{}/{}/idsw/attach/'}
+copy_filepath = filepath.copy()
+
 
 def get_default_extractor_config():
     """Default frames extractor config"""
@@ -84,8 +106,7 @@ def delete_images(directory):
 
 
 def save_fig(directory, image, filename):
-    if not os.path.isdir(directory):
-        os.mkdir(os.path.abspath(directory))
+    os.makedirs(directory, exist_ok=True)
 
     addon = 0
     prefix_name = filename.split('.')[0]
@@ -116,7 +137,7 @@ def get_bounding_box(image, ids_boxes, frame_no):
             # Cut bounding box
             bounding_box = image[bbox_top:bbox_bottom, bbox_left:bbox_right]
 
-            directory = 'output/idsw/bbox_idsw'
+            directory = filepath['IDSW_BBOX_OUTPUT']
             filename = '{}/{}_{}_{}.jpg'.format(directory, str(bbox_id_gt).zfill(2), str(frame_no).zfill(3),
                                                 str(bbox_id).zfill(2))
             save_fig(directory, bounding_box, filename)
@@ -137,8 +158,8 @@ def attach_images(images_dir, output_dir, dim):
         img1 = cv2.resize(cv2.imread(images_path[i]), dim)
         img2 = cv2.resize(cv2.imread(images_path[i + 1]), dim)
         new_img = cv2.vconcat([img1, img2])
-        img_name = split(r'[_/.\\]', images_path[i])[2] + '_' + split(r'[_/.\\]', images_path[i])[3] + '_' + \
-                   split(r'[_/.\\]', images_path[i + 1])[3] + '.jpg'
+        img_name = split(r'[_/.\\]', images_path[i])[4] + '_' + split(r'[_/.\\]', images_path[i])[5] + '_' + \
+                   split(r'[_/.\\]', images_path[i + 1])[5] + '.jpg'
         filename = os.path.join(output_dir, img_name)
         save_fig(output_dir, new_img, filename)
 
@@ -213,8 +234,8 @@ def draw_rectangle(image, length, bbox, bbox_idx):
 
 def get_square_frame_utils(path_to_read):
     """Get frames utils"""
-
-    cap = cv2.VideoCapture('video/detection.mp4')
+    video_path = filepath['DET_VIDEO']
+    cap = cv2.VideoCapture(video_path)
     curr_frame = 0
     frame_idx = 0
     bbox_idx = 0
@@ -226,7 +247,7 @@ def get_square_frame_utils(path_to_read):
     # Total number of FP frames
     size = len(f_frame_len)
 
-    directory = 'output/square_images/' + path_to_read[11:-4] + '/'
+    directory = filepath['EXTRACTOR_OUTPUT'] + path_to_read[start_pt:-4] + '/'
     delete_images(directory)
 
     while True:
@@ -255,18 +276,18 @@ def get_square_frame(detect):
     """Draw a rectangle on and write frames that contain FP boxes to chosen folder"""
 
     # Change current working directory to parent dir
-    code_path = get_code_path()
     if os.getcwd() != code_path:
         os.chdir(code_path)
 
     if detect[0]:
-        print('\nDetecting FP boxes...')
-        get_square_frame_utils('boxdetails/fp.txt')
+        print('\nDetecting FP boxes of {}/{}...'.format(tracker_name, seq_name))
+        print(filepath['FP_DETAILS'])
+        get_square_frame_utils(filepath['FP_DETAILS'])
         print('Finished!!')
 
     if detect[1]:
-        print('\nDetecting FN boxes...')
-        get_square_frame_utils('boxdetails/fn.txt')
+        print('\nDetecting FN boxes of {}/{}...'.format(tracker_name, seq_name))
+        get_square_frame_utils(filepath['FN_DETAILS'])
         print('Finished!!')
 
 
@@ -304,33 +325,34 @@ def create_heatmap(frame, bbox):
 def get_heatmap_utils(path_to_read):
     """Utils of get_heatmap function"""
 
-    cap = cv2.VideoCapture('video/raw.mp4')
+    cap = cv2.VideoCapture(filepath['RAW_VIDEO'])
     running = True
     _, bbox = read_file(path_to_read)
-    directory = 'output/heatmap/'
+    directory = filepath['HEATMAP_OUTPUT']
+    os.makedirs(directory, exist_ok=True)
 
     while running:
         ret, frame = cap.read()
 
         # Draw and write frames
         frame = create_heatmap(frame, bbox)
-        cv2.imshow(path_to_read, frame)
+        # cv2.imshow(path_to_read, frame)
 
         frame = put_text(frame, path_to_read[11:-4].upper())
 
-        filename = directory + path_to_read[11:-4] + '.jpg'
-        print("filename: ", filename)
+        filename = directory + path_to_read[start_pt:-4] + '.jpg'
+        print("filename: ", os.path.abspath(filename))
         cv2.imwrite(filename, frame)
 
         running = False
 
-        if cv2.waitKey(0) & 0xFF == ord('q'):
-            break
+        # if cv2.waitKey(0) & 0xFF == ord('q'):
+        #     break
 
         if not ret:
             break
 
-    cv2.destroyAllWindows()
+    # cv2.destroyAllWindows()
     cap.release()
 
 
@@ -338,36 +360,35 @@ def get_heatmap(heat, gt_file, tracker_file):
     """Call this function to get heatmap of wanted type(s)"""
 
     # Change current working directory to parent dir
-    code_path = get_code_path()
     if os.getcwd() != code_path:
         os.chdir(code_path)
 
     if heat[0]:
-        print('\nGetting heatmap of FP...')
-        get_heatmap_utils('boxdetails/fp.txt')
+        print('\nGetting heatmap of {}/{}/FP...'.format(tracker_name, seq_name))
+        get_heatmap_utils(filepath['FP_DETAILS'])
         print('Finished!!')
 
     if heat[1]:
-        print('\nGetting heatmap of FN...')
-        get_heatmap_utils('boxdetails/fn.txt')
+        print('\nGetting heatmap of {}/{}/FN...')
+        get_heatmap_utils(filepath['FN_DETAILS'])
         print('Finished!!')
 
     if heat[2]:
-        print('\nGetting heatmap of Prediction...')
-        convert_file_format(tracker_file, 'boxdetails/pred.txt')
-        get_heatmap_utils('boxdetails/pred.txt')
+        print('\nGetting heatmap of {}/{}/Prediction...'.format(tracker_name, seq_name))
+        convert_file_format(tracker_file, filepath['PRED_DETAILS'])
+        get_heatmap_utils(filepath['PRED_DETAILS'])
         print('Finished!!')
 
     if heat[3]:  # son add this
-        print('\nGetting heatmap of IDSW...')
-        convert_idsw_to_heatmap_format('boxdetails/idsw.txt', 'boxdetails/idsw_heatmap.txt')
-        get_heatmap_utils('boxdetails/idsw_heatmap.txt')
+        print('\nGetting heatmap of {}/{}/IDSW...'.format(tracker_name, seq_name))
+        convert_idsw_to_heatmap_format(filepath['IDSW_DETAILS'], filepath['IDSW_HEAT'])
+        get_heatmap_utils(filepath['IDSW_HEAT'])
         print('Finished!!')
 
     if heat[4]:
-        print('\nGetting heatmap of Ground truth...')
-        convert_file_format(gt_file, 'boxdetails/gt.txt')
-        get_heatmap_utils('boxdetails/gt.txt')
+        print('\nGetting heatmap of {}-{}-Ground truth...'.format(tracker_name, seq_name))
+        convert_file_format(gt_file, filepath['GT_DETAILS'])
+        get_heatmap_utils(filepath['GT_DETAILS'])
         print('Finished!!')
 
 
@@ -433,14 +454,14 @@ def convert_idsw_to_heatmap_format(filepath, dest_file):
     for obj in obj_infos:
         ids_group[obj[1]].append(obj)
 
-    print(ids_group)
+    # print(ids_group)
     with open(dest_file, 'w') as f:
         for _, objs in ids_group.items():
             objs = sorted(objs, key=lambda x: x[0])
             if len(objs) % 2 == 0:
                 for i in range(1, len(objs), 2):
                     tmp = list(map(str, objs[i]))
-                    print(tmp)
+                    # print(tmp)
                     line = tmp[0] + " " + tmp[3] + " " + tmp[4] + " " + tmp[5] + " " + tmp[6] + "\n"
                     f.write(line)
 
@@ -500,7 +521,7 @@ def draw_idsw_rectangle(image, ids_boxes, frame_no):
             cv2.putText(image_copy, str(bbox_id), org, font, font_scale, color, thicknes_id, line_type)
             put_text(image_copy, str(frame_no))
 
-            directory = 'output/idsw'
+            directory = filepath['IDSW_OUTPUT']
             filename = '{}/{}_{}_{}.jpg'.format(directory, str(bbox_id_gt).zfill(2), str(frame_no).zfill(3),
                                                 str(bbox_id).zfill(2))
             save_fig(directory, image_copy, filename)
@@ -509,7 +530,7 @@ def draw_idsw_rectangle(image, ids_boxes, frame_no):
 def get_idsw_frames_utils(path_to_read):
     """Utils of get_idsw_frame function"""
 
-    cap = cv2.VideoCapture('video/raw.mp4')
+    cap = cv2.VideoCapture(filepath['RAW_VIDEO'])
     curr_frame = 0
     idx = 0
 
@@ -528,7 +549,7 @@ def get_idsw_frames_utils(path_to_read):
             draw_idsw_rectangle(frame, frame_to_ids_boxes[curr_frame], curr_frame)
             idx += 1
 
-    attach_images('output/idsw', 'output/idsw/attach', (1280, 720))
+    attach_images(filepath['IDSW_OUTPUT'], filepath['IDSW_ATTACH_OUTPUT'], (1280, 720))
     cap.release()
 
 
@@ -536,15 +557,18 @@ def get_idsw_frame(idsw):
     """Call this function to get frames of switched ids"""
 
     # Change current working directory to parent dir
-    code_path = get_code_path()
     if os.getcwd() != code_path:
         os.chdir(code_path)
 
     # Delete existed images
-    delete_images('output/idsw/')
-    delete_images('output/idsw/bbox_idsw')
+    delete_images(filepath['IDSW_OUTPUT'])
+    delete_images(filepath['IDSW_BBOX_OUTPUT'])
+    # Create dirs
+    os.makedirs(filepath['IDSW_OUTPUT'], exist_ok=True)
+    os.makedirs(filepath['IDSW_ATTACH_OUTPUT'], exist_ok=True)
+    os.makedirs(filepath['IDSW_BBOX_OUTPUT'], exist_ok=True)
 
     if idsw:
-        print('\nGetting ID switched frames...')
-        get_idsw_frames_utils('boxdetails/idsw.txt')
+        print('\nGetting ID switched frames of {}/{}...'.format(tracker_name, seq_name))
+        get_idsw_frames_utils(filepath['IDSW_DETAILS'])
         print('Finished!!')
