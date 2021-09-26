@@ -41,7 +41,7 @@ class CLEAR(_BaseMetric):
         self.threshold = float(self.config['THRESHOLD'])
 
     @_timing.time
-    def eval_sequence(self, data):
+    def eval_sequence(self, data, seq, tracker):
         """Calculates CLEAR metrics for one sequence"""
         # Initialise results
         res = {}
@@ -71,18 +71,34 @@ class CLEAR(_BaseMetric):
         prev_timestep_tracker_id = np.nan * np.zeros(num_gt_ids)  # For matching IDSW
         num_frame_id_disappear = np.zeros(num_gt_ids)  # For counting no. frames since id's last appearance
 
+        # Get path/to/root_dir
+        code_path = utils.get_code_path()
+
         if fp_dataset:
-            filepath = os.path.join(os.getcwd(), 'boxdetails/fp.txt')
+            fp_path = r'boxdetails\{}\{}'.format(tracker, seq)
+            fp_path = os.path.join(code_path, fp_path)
+            os.makedirs(fp_path, exist_ok=True)
+            filepath = os.path.join(fp_path, 'fp.txt')
             if os.path.isfile(filepath):
                 open(filepath, 'r+').truncate(0)
+            if os.path.isdir(filepath):
+                print(filepath)
             fp_frames_file = open(filepath, 'a')
+
         if fn_dataset:
-            filepath = os.path.join(os.getcwd(), 'boxdetails/fn.txt')
+            fn_path = r'boxdetails\{}\{}'.format(tracker, seq)
+            fn_path = os.path.join(code_path, fn_path)
+            os.makedirs(fn_path, exist_ok=True)
+            filepath = os.path.join(fn_path, 'fn.txt')
             if os.path.isfile(filepath):
                 open(filepath, 'r+').truncate(0)
             fn_frames_file = open(filepath, 'a')
+
         if idsw:
-            filepath = os.path.join(os.getcwd(), 'boxdetails/idsw.txt')
+            idsw_path = 'boxdetails\{}\{}'.format(tracker, seq)
+            idsw_path = os.path.join(code_path, idsw_path)
+            os.makedirs(idsw_path, exist_ok=True)
+            filepath = os.path.join(idsw_path, 'idsw.txt')
             if os.path.isfile(filepath):
                 open(filepath, 'r+').truncate(0)
             idsw_file = open(filepath, 'a')
@@ -192,7 +208,7 @@ class CLEAR(_BaseMetric):
                 for id_after_switch in curr_id_to_prev_info.keys():
                     id_before_switch = curr_id_to_prev_info.get(id_after_switch)[0]
                     if curr_id_to_prev_info.get(id_after_switch)[1] == 2:
-                        prev_frame = 1  # Handling special case
+                        prev_frame = 1  # Handling case idsw happens at consecutive frames
                     else:
                         prev_frame = curr_id_to_prev_info.get(id_after_switch)[1]
                     pos = list(curr_id_to_prev_info.keys()).index(id_after_switch)
