@@ -7,6 +7,7 @@ from . import utils
 from .utils import TrackEvalException
 from . import _timing
 from .metrics import Count
+import trackeval
 
 
 class Evaluator:
@@ -194,5 +195,8 @@ def eval_sequence(seq, dataset, tracker, class_list, metrics_list, metric_names)
         seq_res[cls] = {}
         data = dataset.get_preprocessed_seq_data(raw_data, cls)
         for metric, met_name in zip(metrics_list, metric_names):
+            if isinstance(metric, trackeval.metrics.CLEAR):
+                seq_res[cls][met_name] = metric.eval_sequence(data, seq, tracker)
+                continue
             seq_res[cls][met_name] = metric.eval_sequence(data)
     return seq_res
