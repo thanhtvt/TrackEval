@@ -9,7 +9,7 @@ This branch is developed for getting:
   
 ## Place your data  
   
-Please check out this [readme](https://github.com/thanhtvt/TrackEval/blob/master/docs/MOTChallenge-Official/Readme.md#evaluating-on-your-own-data) to prepare data (including gt, trackers and seqmap).  
+Please take a look at this [readme](https://github.com/thanhtvt/TrackEval/blob/master/docs/MOTChallenge-Official/Readme.md#evaluating-on-your-own-data) to prepare data (including gt, trackers and seqmap).  
 
 For videos, you can put those at `TrackEval/video` folder:
 - Name it `raw.mp4` if you choose `HEATMAP` and/or `ID_SWITCH` argument(s)
@@ -35,6 +35,7 @@ python scripts/run_mot_challenge.py --BENCHMARK MOT17 --SPLIT_TO_EVAL train --TR
 **Some note:**
 - `--TRACKER_TO_EVAL` is the name of the folder that inside `TrackEval\data\trackers\mot_challenge\<YourChallenge>\` folder
 - `--METRICS` must have `CLEAR` as its param for extracting frames and getting heatmap
+- **IMPORTANT:** If you want to evaluate and get frames from multiple videos with multiple trackers AT THE SAME TIME, you must place all of your data inside your `--BENCHMARK` directory.
   
 # What is it doing  
   
