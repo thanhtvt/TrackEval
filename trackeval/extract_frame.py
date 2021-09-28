@@ -545,6 +545,14 @@ purpose: add gif for idsw
 """    
 
 def read_tracker_file(file_path):
+    """Convert mot file to frame group format and mapping pred id to trackEval id
+
+    Args:
+        file_path ([type]): [description]
+
+    Returns:
+        [type]: [description]
+    """
     lines = [] #
     spliter = None
     with open(file_path, 'r') as f:
@@ -592,7 +600,7 @@ def is_in_frame_range(frame_idx, key):
         return True 
     return False  
 
-def draw_gif_frame(image, bbox):
+def draw_gif_frame(image, bbox, frame_no):
     """Draw a rectangle with given bbox info.
 
     Input:
@@ -610,17 +618,17 @@ def draw_gif_frame(image, bbox):
     # Set up params
     left_top_pt = (bbox_left, bbox_top)
     right_bottom_pt = (bbox_right, bbox_bottom)
-    color = (0, 0, 0)
-    thickness = 7
+    color = (255, 0, 0)
+    thickness = 8
     org = (bbox_left, bbox_top - 5)
     font = cv2.FONT_HERSHEY_SIMPLEX
     font_scale = 1
-    thicknes_id = 2
+    thicknes_id = 3
     line_type = cv2.LINE_4
 
     cv2.rectangle(image, left_top_pt, right_bottom_pt, color, thickness)
     cv2.putText(image, str(obj_id), org, font, font_scale, color, thicknes_id, line_type)
-    
+    put_text(image, str(frame_no))
     # test
     # cv2.imshow("img", image)
     # cv2.waitKey(0)
@@ -629,17 +637,35 @@ def draw_gif_frame(image, bbox):
     return image
 
 def draw_gif_all_frames(frames, start_frame, frame_tracker_groups, idsw_val):
+    """Draw idsw box for all frame in gif
+
+    Args:
+        frames ([type]): [description]
+        start_frame ([type]): [description]
+        frame_tracker_groups ([type]): [description]
+        idsw_val ([type]): [description]
+
+    Returns:
+        [list]: Frames have been drawn
+    """
     drawn_frames = []
     for idx in range(len(frames)):
         cur_objs = frame_tracker_groups[start_frame + idx] 
         for obj in cur_objs:
             if((obj[1] == idsw_val[0] and idx != len(frames)-1) or (obj[1] == idsw_val[1] and idx == len(frames)-1)):
-                new_frame = draw_gif_frame(frames[idx], obj)
+                new_frame = draw_gif_frame(frames[idx], obj, start_frame + idx)
                 drawn_frames.append(new_frame)
     return drawn_frames
         
 
 def get_idsw_gif(idsw_gt_groups, frame_range, frame_tracker_groups):
+    """Get gif images for all idsw case
+
+    Args:
+        idsw_gt_groups ([type]): {"id_gt": [[frame, id_pred], ...]}
+        frame_range ([type]): {"{start_frame}_{end_frame}": []}
+        frame_tracker_groups ([type]): {"frame": [bbox1, bbox2, ...]}
+    """
     gif_save_path = filepath['IDSW_GIF']
     
     for id_gt, v in idsw_gt_groups.items():
@@ -648,7 +674,7 @@ def get_idsw_gif(idsw_gt_groups, frame_range, frame_tracker_groups):
             idsw_val = [v[idx][1], v[idx+1][1]]
             drawn_frames = draw_gif_all_frames(frame_range[frame_range_key], v[idx][0], frame_tracker_groups, idsw_val)
             gif_name = f"{v[idx][0]}_{v[idx][1]}to{v[idx+1][0]}_{v[idx+1][1]}.gif"
-            imageio.mimsave(os.path.join(gif_save_path, gif_name), drawn_frames, fps=5)
+            imageio.mimsave(os.path.join(gif_save_path, gif_name), drawn_frames, fps=2)
             
 # -------- end ---------   
             

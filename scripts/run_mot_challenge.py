@@ -146,7 +146,7 @@ if __name__ == '__main__':
         # Get frames
         extract_frame.get_square_frame(extr_bool)
         # Get heatmap
-        extract_frame.get_heatmap(heatmap_bool, gt_filepath, tracker_filepath)
+        extract_frame.get_heatmap(heatmap_bool)
         # Get idsw
         extract_frame.get_idsw_frame(trackeval.metrics.clear.idsw, tracker_filepath)
 
