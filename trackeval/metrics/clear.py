@@ -111,25 +111,21 @@ class CLEAR(_BaseMetric):
             # Deal with the case that there are no gt_det/tracker_det in a timestep.
             if len(gt_ids_t) == 0:
                 res['CLR_FP'] += len(tracker_ids_t)
-
                 # Write file
                 if fp_dataset and len(tracker_ids_t) > 0:
                     fp_frames_file.write(str(t + 1))
                     for elem in data['tracker_dets'][t].flatten():
                         fp_frames_file.write(' ' + str(elem))
                     fp_frames_file.write('\n')
-
                 continue
             if len(tracker_ids_t) == 0:
                 res['CLR_FN'] += len(gt_ids_t)
-
                 # Write file
                 if fn_dataset and len(gt_ids_t) > 0:
                     fn_frames_file.write(str(t + 1))
                     for elem in data['gt_dets'][t].flatten():
                         fn_frames_file.write(' ' + str(elem))
                     fn_frames_file.write('\n')
-
                 gt_id_count[gt_ids_t] += 1
                 continue
 
