@@ -75,7 +75,7 @@ class CLEAR(_BaseMetric):
         code_path = utils.get_code_path()
 
         if fp_dataset:
-            fp_path = r'boxdetails\{}\{}'.format(tracker, seq)
+            fp_path = r'boxdetails/{}/{}'.format(tracker, seq)
             fp_path = os.path.join(code_path, fp_path)
             os.makedirs(fp_path, exist_ok=True)
             filepath = os.path.join(fp_path, 'fp.txt')
@@ -86,7 +86,7 @@ class CLEAR(_BaseMetric):
             fp_frames_file = open(filepath, 'a')
 
         if fn_dataset:
-            fn_path = r'boxdetails\{}\{}'.format(tracker, seq)
+            fn_path = r'boxdetails/{}/{}'.format(tracker, seq)
             fn_path = os.path.join(code_path, fn_path)
             os.makedirs(fn_path, exist_ok=True)
             filepath = os.path.join(fn_path, 'fn.txt')
@@ -95,7 +95,7 @@ class CLEAR(_BaseMetric):
             fn_frames_file = open(filepath, 'a')
 
         if idsw:
-            idsw_path = 'boxdetails\{}\{}'.format(tracker, seq)
+            idsw_path = 'boxdetails/{}/{}'.format(tracker, seq)
             idsw_path = os.path.join(code_path, idsw_path)
             os.makedirs(idsw_path, exist_ok=True)
             filepath = os.path.join(idsw_path, 'idsw.txt')
@@ -111,25 +111,21 @@ class CLEAR(_BaseMetric):
             # Deal with the case that there are no gt_det/tracker_det in a timestep.
             if len(gt_ids_t) == 0:
                 res['CLR_FP'] += len(tracker_ids_t)
-
                 # Write file
                 if fp_dataset and len(tracker_ids_t) > 0:
                     fp_frames_file.write(str(t + 1))
                     for elem in data['tracker_dets'][t].flatten():
                         fp_frames_file.write(' ' + str(elem))
                     fp_frames_file.write('\n')
-
                 continue
             if len(tracker_ids_t) == 0:
                 res['CLR_FN'] += len(gt_ids_t)
-
                 # Write file
                 if fn_dataset and len(gt_ids_t) > 0:
                     fn_frames_file.write(str(t + 1))
                     for elem in data['gt_dets'][t].flatten():
                         fn_frames_file.write(' ' + str(elem))
                     fn_frames_file.write('\n')
-
                 gt_id_count[gt_ids_t] += 1
                 continue
 

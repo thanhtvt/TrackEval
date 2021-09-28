@@ -130,19 +130,22 @@ if __name__ == '__main__':
     for gt_filepath, tracker_filepath, tracker_name, seq_name in dataset_list[0].get_files_loc_and_names():
         # Update filepath
         for key in extract_frame.filepath.keys():
+            if key == 'GT_FILE':
+                extract_frame.filepath[key] = gt_filepath
+                continue
+            elif key == 'TRACKER_FILE':
+                extract_frame.filepath[key] = tracker_filepath
+                continue
             extract_frame.filepath[key] = extract_frame.filepath[key].format(tracker_name, seq_name)
-        # Update start point to get string
-        extract_frame.start_pt = len('boxdetails') + len(tracker_name) + len(seq_name) + len('/') * 3
 
-        # Refer to global vars in extract_frame.py
+        # Update global vars in extract_frame.py
         extract_frame.tracker_name = tracker_name
         extract_frame.seq_name = seq_name
+        extract_frame.start_pt = len('boxdetails') + len(tracker_name) + len(seq_name) + len('/') * 3
 
-        # Get square images showing FN/FP boxes
+        # Get frames
         extract_frame.get_square_frame(extr_bool)
-        # Get heatmap
-        extract_frame.get_heatmap(heatmap_bool, gt_filepath, tracker_filepath)
-        # Get idsw
+        extract_frame.get_heatmap(heatmap_bool)
         extract_frame.get_idsw_frame(trackeval.metrics.clear.idsw)
 
         # Return to initial dict
