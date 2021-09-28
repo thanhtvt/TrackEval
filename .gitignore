@@ -13,6 +13,8 @@ boxdetails/fn.txt
 boxdetails/gt.txt
 boxdetails/pred.txt
 video/*.mp4
+*.mp4
+*.gif
 !goutput/Readme.md
 **/__pycache__
 .idea
