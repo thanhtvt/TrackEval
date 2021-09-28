@@ -143,7 +143,7 @@ if __name__ == '__main__':
         # Get heatmap
         extract_frame.get_heatmap(heatmap_bool, gt_filepath, tracker_filepath)
         # Get idsw
-        extract_frame.get_idsw_frame(trackeval.metrics.clear.idsw)
+        extract_frame.get_idsw_frame(trackeval.metrics.clear.idsw, tracker_filepath)
 
         # Return to initial dict
         extract_frame.filepath = extract_frame.copy_filepath.copy()

@@ -3,6 +3,8 @@ from re import split
 import cv2
 import numpy as np
 from .utils import get_code_path
+from collections import defaultdict
+import imageio
 
 """----General utils----"""
 
@@ -24,6 +26,7 @@ filepath = {'DET_VIDEO': 'video/{}/{}/detection.mp4',
             'EXTRACTOR_OUTPUT': 'output/{}/{}/square_images/',
             'HEATMAP_OUTPUT': 'output/{}/{}/heatmap/',
             'IDSW_OUTPUT': 'output/{}/{}/idsw/',
+            'IDSW_GIF': 'output/{}/{}/gif/',
             'IDSW_BBOX_OUTPUT': 'output/{}/{}/idsw/bbox_idsw/',
             'IDSW_ATTACH_OUTPUT': 'output/{}/{}/idsw/attach/'}
 copy_filepath = filepath.copy()
@@ -188,7 +191,7 @@ def read_file(path):
     Output:
         - f_frame_len: A dictionary whose key is a frame index, value is a length of box info
         - bbox_info: A list containing left coordinate, top coordinate, width and height of box"""
-
+    
     f = open(path, 'r').read()
     f_frame_len = {}
     bbox_info = []
@@ -526,34 +529,167 @@ def draw_idsw_rectangle(image, ids_boxes, frame_no):
                                                 str(bbox_id).zfill(2))
             save_fig(directory, image_copy, filename)
 
+"""
+author: Son
+modify: 28/9/2021
+purpose: add gif for idsw
+"""    
 
-def get_idsw_frames_utils(path_to_read):
+def read_tracker_file(file_path):
+    lines = [] #
+    spliter = None
+    with open(file_path, 'r') as f:
+        for line in f:
+            if(spliter is None):
+                spliter = "," if "," in line else " " 
+            line = line.rstrip().split(spliter)
+            line = list(map(float, line)) # convert str to float 
+            line = list(map(int, line)) # convert to int for opencv visualine
+            lines.append(line)
+    
+    # group obj in frames: 
+    frame_groups = defaultdict(list)
+    ids_pred = set()
+    for line in lines:
+        ids_pred.add(line[1])
+        frame_groups[line[0]].append(line[:6]) 
+    
+    ids_pred = sorted(list(ids_pred))
+    idsw_mapper = {k:v for k, v in zip(ids_pred, range(len(ids_pred)))} # map from id in prediction file to id in trackeval cuz id in track eval start from 1 
+    
+    # print("IDSW MAPPER: ", idsw_mapper)
+    # map to new id 
+    for k, v in frame_groups.items():
+        obj_in_frames = [] 
+        for obj in v:
+            obj[1] = idsw_mapper[obj[1]] # id index 1 
+            obj_in_frames.append(obj)
+        frame_groups[k] = obj_in_frames
+        
+    return frame_groups
+
+def group_obj_idsw_gt(frame_to_ids_boxes):
+    idsw_gt_groups = defaultdict(list)
+    
+    for k, v in frame_to_ids_boxes.items():
+        for i in range(0, len(v), 6):
+            id_gt = v[i]
+            idsw_gt_groups[id_gt].append([k, v[i+1]]) # [frame, id_pred] 
+    return idsw_gt_groups
+        
+def is_in_frame_range(frame_idx, key):
+    start_frame, end_frame = list(map(int, key.split("_")))
+    if(frame_idx >= start_frame and frame_idx <= end_frame):
+        return True 
+    return False  
+
+def draw_gif_frame(image, bbox):
+    """Draw a rectangle with given bbox info.
+
+    Input:
+        - image: Frame to draw on
+        - length: Number of info (4 info/box)
+        - bbox: A list containing rectangles' info to draw -> frame id x y w h 
+    Output: Frame that has been drawn on"""
+
+    obj_id = bbox[1]
+    bbox_left = int(bbox[2])
+    bbox_top = int(bbox[3])
+    bbox_right = bbox_left + int(bbox[4])
+    bbox_bottom = bbox_top + int(bbox[5])
+
+    # Set up params
+    left_top_pt = (bbox_left, bbox_top)
+    right_bottom_pt = (bbox_right, bbox_bottom)
+    color = (0, 0, 0)
+    thickness = 7
+    org = (bbox_left, bbox_top - 5)
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    font_scale = 1
+    thicknes_id = 2
+    line_type = cv2.LINE_4
+
+    cv2.rectangle(image, left_top_pt, right_bottom_pt, color, thickness)
+    cv2.putText(image, str(obj_id), org, font, font_scale, color, thicknes_id, line_type)
+    
+    # test
+    # cv2.imshow("img", image)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows() 
+    
+    return image
+
+def draw_gif_all_frames(frames, start_frame, frame_tracker_groups, idsw_val):
+    drawn_frames = []
+    for idx in range(len(frames)):
+        cur_objs = frame_tracker_groups[start_frame + idx] 
+        for obj in cur_objs:
+            if((obj[1] == idsw_val[0] and idx != len(frames)-1) or (obj[1] == idsw_val[1] and idx == len(frames)-1)):
+                new_frame = draw_gif_frame(frames[idx], obj)
+                drawn_frames.append(new_frame)
+    return drawn_frames
+        
+
+def get_idsw_gif(idsw_gt_groups, frame_range, frame_tracker_groups):
+    gif_save_path = filepath['IDSW_GIF']
+    
+    for id_gt, v in idsw_gt_groups.items():
+        for idx in range(0, len(v), 2):
+            frame_range_key = "{start_frame}_{end_frame}".format(start_frame=v[idx][0], end_frame=v[idx+1][0])
+            idsw_val = [v[idx][1], v[idx+1][1]]
+            drawn_frames = draw_gif_all_frames(frame_range[frame_range_key], v[idx][0], frame_tracker_groups, idsw_val)
+            gif_name = f"{v[idx][0]}_{v[idx][1]}to{v[idx+1][0]}_{v[idx+1][1]}.gif"
+            imageio.mimsave(os.path.join(gif_save_path, gif_name), drawn_frames, fps=5)
+            
+# -------- end ---------   
+            
+def get_idsw_frames_utils(path_to_read, tracker_filepath):
     """Utils of get_idsw_frame function"""
 
     cap = cv2.VideoCapture(filepath['RAW_VIDEO'])
     curr_frame = 0
     idx = 0
 
-    frame_to_ids_boxes = read_idsw_file(path_to_read)
-    frame_to_ids_boxes = convert_idsw_bbox_info(frame_to_ids_boxes)
+    frame_to_ids_boxes_raw = read_idsw_file(path_to_read)
+    frame_to_ids_boxes = convert_idsw_bbox_info(frame_to_ids_boxes_raw)
+    
+    # group idsw grouthtruth 
+    idsw_gt_groups = group_obj_idsw_gt(frame_to_ids_boxes) # {"id_gt": [[frame, id_pred], ...]}
+    # construct frame range to get image frame
+    frame_range = {}
+    frame_range_pattern = "{start_frame}_{end_frame}"
+    for k, v in idsw_gt_groups.items():
+        for idx in range(0, len(v), 2):
+            frame_range[frame_range_pattern.format(start_frame=v[idx][0], end_frame=v[idx+1][0])] = []            
+    # group tracker frames
+    frame_tracker_groups = read_tracker_file(tracker_filepath) # {"frame": [bbox1, bbox2, ...]}
+    # print("frame_tracker_groups: ", frame_tracker_groups)
+    print("idsw_gt_groups: ", idsw_gt_groups)
+    print("frame_range: ", frame_range)
+    
     size = len(frame_to_ids_boxes)
-
     while True:
         ret, frame = cap.read()
         curr_frame += 1
         if not ret:
             break
-
+        
+        for key in frame_range.keys():
+            if is_in_frame_range(curr_frame, key):
+                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                frame_range[key].append(frame_rgb) 
+    
         if idx < size and curr_frame == list(frame_to_ids_boxes)[idx]:
             get_bounding_box(frame, frame_to_ids_boxes[curr_frame], curr_frame)
             draw_idsw_rectangle(frame, frame_to_ids_boxes[curr_frame], curr_frame)
             idx += 1
 
+    get_idsw_gif(idsw_gt_groups, frame_range,frame_tracker_groups)
     attach_images(filepath['IDSW_OUTPUT'], filepath['IDSW_ATTACH_OUTPUT'], (1280, 720))
     cap.release()
 
 
-def get_idsw_frame(idsw):
+def get_idsw_frame(idsw, tracker_filepath):
     """Call this function to get frames of switched ids"""
 
     # Change current working directory to parent dir
@@ -563,12 +699,15 @@ def get_idsw_frame(idsw):
     # Delete existed images
     delete_images(filepath['IDSW_OUTPUT'])
     delete_images(filepath['IDSW_BBOX_OUTPUT'])
+    delete_images(filepath['IDSW_GIF'])
     # Create dirs
     os.makedirs(filepath['IDSW_OUTPUT'], exist_ok=True)
     os.makedirs(filepath['IDSW_ATTACH_OUTPUT'], exist_ok=True)
     os.makedirs(filepath['IDSW_BBOX_OUTPUT'], exist_ok=True)
+    os.makedirs(filepath['IDSW_GIF'], exist_ok=True)
+
 
     if idsw:
         print('\nGetting ID switched frames of {}/{}...'.format(tracker_name, seq_name))
-        get_idsw_frames_utils(filepath['IDSW_DETAILS'])
+        get_idsw_frames_utils(filepath['IDSW_DETAILS'], tracker_filepath)
         print('Finished!!')
