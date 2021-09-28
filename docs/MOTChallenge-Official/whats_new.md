@@ -11,19 +11,22 @@ This branch is developed for getting:
   
 Please take a look at this [readme](https://github.com/thanhtvt/TrackEval/blob/master/docs/MOTChallenge-Official/Readme.md#evaluating-on-your-own-data) to prepare data (including gt, trackers and seqmap).  
 
-For videos, you can put those at `TrackEval/video` folder:
-- Name it `raw.mp4` if you choose `HEATMAP` and/or `ID_SWITCH` argument(s)
-- Name it `detection.mp4` if you choose `EXTRACTOR` argument
+For **videos**, you can put yours like following: 
+```
+TrackEval/video/<tracker>/<sequence>/raw.mp4
+```
+- `<tracker>` is the name of your tracker folder which mentioned in `--TRACKERS_TO_EVAL`. You can have multiple trackers as you want.
+- `<sequence>` is the name of your sequence/video which is inside `--BENCHMARK` folder. You can have multiple sequences/videos as you want.
   
 ## Execute  
 
 Just with some arguments.  
   
-```EXTRACTOR```: The type that you want to get. Valid options: `FP`, `FN`  
+```EXTRACTOR```: The type that you want to get. Valid options: `FP`, `FN`.  
   
-```HEATMAP```: Type of heatmap you want to get. Valid options: `GT`, `PRED`, `FP`, `FN`  
+```HEATMAP```: Type of heatmap you want to get. Valid options: `GT`, `PRED`, `FP`, `FN`, `IDSW`.
   
-```ID_SWITCH```: Get frames before and after id being switched. Valid options: `True` (`False` is similar to not include this arg)  
+```ID_SWITCH```: Get frames before and after id being switched. Valid options: `True` (`False` is similar to not include this arg).  
   
 For other basic arguments, please check out this [official readme](https://github.com/thanhtvt/TrackEval/blob/master/docs/MOTChallenge-Official/Readme.md#evaluation)
   
