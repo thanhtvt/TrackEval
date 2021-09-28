@@ -13,7 +13,8 @@ start_pt = 0
 
 # File path storage
 code_path = get_code_path()
-filepath = {'DET_VIDEO': 'video/{}/{}/detection.mp4',
+filepath = {'GT_FILE': '',
+            'TRACKER_FILE': '',
             'RAW_VIDEO': 'video/{}/{}/raw.mp4',
             'FP_DETAILS': 'boxdetails/{}/{}/fp.txt',
             'FN_DETAILS': 'boxdetails/{}/{}/fn.txt',
@@ -205,7 +206,7 @@ def read_file(path):
     return f_frame_len, bbox_info
 
 
-def draw_rectangle(image, length, bbox, bbox_idx):
+def draw_rectangle(image, length, bbox, bbox_idx, color=(0, 0, 0)):
     """Draw a rectangle with given bbox info.
 
     Input:
@@ -225,8 +226,7 @@ def draw_rectangle(image, length, bbox, bbox_idx):
             # Set up params
             left_top_pt = (bbox_left, bbox_top)
             right_bottom_pt = (bbox_right, bbox_bottom)
-            color = (0, 0, 0)
-            thickness = 7
+            thickness = 5
 
             image = cv2.rectangle(image, left_top_pt, right_bottom_pt, color, thickness)
     return image
@@ -234,21 +234,28 @@ def draw_rectangle(image, length, bbox, bbox_idx):
 
 def get_square_frame_utils(path_to_read):
     """Get frames utils"""
-    video_path = filepath['DET_VIDEO']
+    video_path = filepath['RAW_VIDEO']
     cap = cv2.VideoCapture(video_path)
     curr_frame = 0
     frame_idx = 0
     bbox_idx = 0
+    pred_bbox_idx = 0
 
     f_frame_len, bbox_info = read_file(path_to_read)
     bbox = convert_bbox_info(f_frame_len, bbox_info)
 
     f_frame = list(f_frame_len)
-    # Total number of FP frames
+    # Total number of FP/FN frames
     size = len(f_frame_len)
 
     directory = filepath['EXTRACTOR_OUTPUT'] + path_to_read[start_pt:-4] + '/'
     delete_images(directory)
+
+    # Read prediction file
+    if not os.path.exists(filepath['PRED_DETAILS']):
+        convert_file_format(filepath['TRACKER_FILE'], filepath['PRED_DETAILS'])
+    pred_frame_len, pred_bbox = read_file(filepath['PRED_DETAILS'])
+    pred_bbox = convert_bbox_info(pred_frame_len, pred_bbox)
 
     while True:
         ret, frame = cap.read()
@@ -257,9 +264,11 @@ def get_square_frame_utils(path_to_read):
             break
         if frame_idx < size and curr_frame == f_frame[frame_idx]:
             length = f_frame_len.get(curr_frame)
+            pred_length = pred_frame_len.get(curr_frame)
 
             # Draw and write frames
-            frame = draw_rectangle(frame, length, bbox, bbox_idx)
+            frame = draw_rectangle(frame, pred_length, pred_bbox, pred_bbox_idx)        # draw pred
+            frame = draw_rectangle(frame, length, bbox, bbox_idx, color=(0, 0, 255))    # draw FN/FP
             frame = put_text(frame, path_to_read[11:-4].upper())
 
             filename = directory + str(curr_frame) + '.jpg'
@@ -268,6 +277,7 @@ def get_square_frame_utils(path_to_read):
             # Update params
             frame_idx += 1
             bbox_idx += length
+            pred_bbox_idx += pred_length
 
     cap.release()
 
@@ -281,7 +291,6 @@ def get_square_frame(detect):
 
     if detect[0]:
         print('\nDetecting FP boxes of {}/{}...'.format(tracker_name, seq_name))
-        print(filepath['FP_DETAILS'])
         get_square_frame_utils(filepath['FP_DETAILS'])
         print('Finished!!')
 
@@ -356,7 +365,7 @@ def get_heatmap_utils(path_to_read):
     cap.release()
 
 
-def get_heatmap(heat, gt_file, tracker_file):
+def get_heatmap(heat):
     """Call this function to get heatmap of wanted type(s)"""
 
     # Change current working directory to parent dir
@@ -375,7 +384,7 @@ def get_heatmap(heat, gt_file, tracker_file):
 
     if heat[2]:
         print('\nGetting heatmap of {}/{}/Prediction...'.format(tracker_name, seq_name))
-        convert_file_format(tracker_file, filepath['PRED_DETAILS'])
+        convert_file_format(filepath['TRACKER_FILE'], filepath['PRED_DETAILS'])
         get_heatmap_utils(filepath['PRED_DETAILS'])
         print('Finished!!')
 
@@ -387,7 +396,7 @@ def get_heatmap(heat, gt_file, tracker_file):
 
     if heat[4]:
         print('\nGetting heatmap of {}-{}-Ground truth...'.format(tracker_name, seq_name))
-        convert_file_format(gt_file, filepath['GT_DETAILS'])
+        convert_file_format(filepath['GT_FILE'], filepath['GT_DETAILS'])
         get_heatmap_utils(filepath['GT_DETAILS'])
         print('Finished!!')
 
