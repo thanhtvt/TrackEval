@@ -315,7 +315,8 @@ def create_heatmap(frame, bbox):
     Output: frame after being drawn on"""
 
     # Create overlay
-    overlay_img = np.full((1080, 1920, 3), 255, dtype=np.uint8)
+    overlay_img = np.full(frame.shape, 255, dtype=np.uint8)
+    
     frame = cv2.addWeighted(overlay_img, 0.4, frame, 0.6, 0)
 
     for idx in range(len(bbox)):
@@ -655,6 +656,7 @@ def draw_gif_all_frames(frames, start_frame, frame_tracker_groups, idsw_val):
             if((obj[1] == idsw_val[0] and idx != len(frames)-1) or (obj[1] == idsw_val[1] and idx == len(frames)-1)):
                 new_frame = draw_gif_frame(frames[idx], obj, start_frame + idx)
                 drawn_frames.append(new_frame)
+    
     return drawn_frames
         
 
@@ -674,6 +676,7 @@ def get_idsw_gif(idsw_gt_groups, frame_range, frame_tracker_groups):
             idsw_val = [v[idx][1], v[idx+1][1]]
             drawn_frames = draw_gif_all_frames(frame_range[frame_range_key], v[idx][0], frame_tracker_groups, idsw_val)
             gif_name = f"{v[idx][0]}_{v[idx][1]}to{v[idx+1][0]}_{v[idx+1][1]}.gif"
+            print(f"Number of frame {len(drawn_frames)} in {gif_name}, which is {len(frame_range[frame_range_key])}")
             imageio.mimsave(os.path.join(gif_save_path, gif_name), drawn_frames, fps=2)
             
 # -------- end ---------   
@@ -694,15 +697,16 @@ def get_idsw_frames_utils(path_to_read, tracker_filepath):
     frame_range = {}
     frame_range_pattern = "{start_frame}_{end_frame}"
     for k, v in idsw_gt_groups.items():
-        for idx in range(0, len(v), 2):
+        for idx in range(0, len(v) - 1, 2):
             frame_range[frame_range_pattern.format(start_frame=v[idx][0], end_frame=v[idx+1][0])] = []            
     # group tracker frames
     frame_tracker_groups = read_tracker_file(tracker_filepath) # {"frame": [bbox1, bbox2, ...]}
     # print("frame_tracker_groups: ", frame_tracker_groups)
-    print("idsw_gt_groups: ", idsw_gt_groups)
-    print("frame_range: ", frame_range)
+    # print("idsw_gt_groups: ", idsw_gt_groups)
+    # print("frame_range: ", frame_range)
     
     size = len(frame_to_ids_boxes)
+    counter = 0
     while True:
         ret, frame = cap.read()
         curr_frame += 1
@@ -711,13 +715,18 @@ def get_idsw_frames_utils(path_to_read, tracker_filepath):
         
         for key in frame_range.keys():
             if is_in_frame_range(curr_frame, key):
-                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                frame_range[key].append(frame_rgb) 
+                # print(f"{curr_frame} frame in range {key}")
+                # frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                frame_range[key].append(frame_gray)  # tran` RAM o day`
     
         if idx < size and curr_frame == list(frame_to_ids_boxes)[idx]:
             get_bounding_box(frame, frame_to_ids_boxes[curr_frame], curr_frame)
             draw_idsw_rectangle(frame, frame_to_ids_boxes[curr_frame], curr_frame)
             idx += 1
+        if(counter == 40):
+            break
+            
 
     get_idsw_gif(idsw_gt_groups, frame_range,frame_tracker_groups)
     attach_images(filepath['IDSW_OUTPUT'], filepath['IDSW_ATTACH_OUTPUT'], (1280, 720))
