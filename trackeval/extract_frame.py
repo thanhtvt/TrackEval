@@ -718,17 +718,17 @@ def get_idsw_frames_utils(path_to_read, tracker_filepath):
                 # print(f"{curr_frame} frame in range {key}")
                 # frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                frame_range[key].append(frame_gray)  # tran` RAM o day`
+                # frame_range[key].append(frame_gray)  # tran` RAM o day`
     
         if idx < size and curr_frame == list(frame_to_ids_boxes)[idx]:
             get_bounding_box(frame, frame_to_ids_boxes[curr_frame], curr_frame)
             draw_idsw_rectangle(frame, frame_to_ids_boxes[curr_frame], curr_frame)
             idx += 1
-        if(counter == 40):
-            break
+        # if(counter == 40):
+        #     break
             
 
-    get_idsw_gif(idsw_gt_groups, frame_range,frame_tracker_groups)
+    # get_idsw_gif(idsw_gt_groups, frame_range,frame_tracker_groups)
     attach_images(filepath['IDSW_OUTPUT'], filepath['IDSW_ATTACH_OUTPUT'], (1280, 720))
     cap.release()
 
