@@ -289,8 +289,11 @@ def get_square_frame_utils(path_to_read):
         curr_frame += 1
         if not ret:
             break
-
-        pred_length = pred_frame_len.get(curr_frame)
+        
+        if(curr_frame in pred_frame_len):
+            pred_length = pred_frame_len.get(curr_frame)
+        else:
+            pred_length = 0
         if frame_idx < size and curr_frame == f_frame[frame_idx]:
             length = f_frame_len.get(curr_frame)
 
