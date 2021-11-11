@@ -265,9 +265,10 @@ def get_square_frame_utils(path_to_read):
         curr_frame += 1
         if not ret:
             break
+
+        pred_length = pred_frame_len.get(curr_frame)
         if frame_idx < size and curr_frame == f_frame[frame_idx]:
             length = f_frame_len.get(curr_frame)
-            pred_length = pred_frame_len.get(curr_frame)
 
             # Draw and write frames
             frame = draw_rectangle(frame, pred_length, pred_bbox, pred_bbox_idx)        # draw pred
@@ -280,7 +281,7 @@ def get_square_frame_utils(path_to_read):
             # Update params
             frame_idx += 1
             bbox_idx += length
-            pred_bbox_idx += pred_length
+        pred_bbox_idx += pred_length
 
     cap.release()
 
