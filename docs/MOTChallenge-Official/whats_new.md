@@ -1,4 +1,4 @@
-# What's new in this branch  
+# What's new in this repository?  
 
 This branch is developed for getting:  
 - Frames which contain FP, FN.  
@@ -13,7 +13,7 @@ Please take a look at this [readme](https://github.com/thanhtvt/TrackEval/blob/m
 
 For **videos**, you can put yours like following: 
 ```
-TrackEval/video/<tracker>/<sequence>/raw.mp4
+TrackEval/video/<tracker>/<sequence>.mp4
 ```
 - `<tracker>` is the name of your tracker folder which mentioned in `--TRACKERS_TO_EVAL`. You can have multiple trackers as you want.
 - `<sequence>` is the name of your sequence/video which is inside `--BENCHMARK` folder. You can have multiple sequences/videos as you want.
@@ -40,7 +40,7 @@ python scripts/run_mot_challenge.py --BENCHMARK MOT17 --SPLIT_TO_EVAL train --TR
 - `--METRICS` must have `CLEAR` as its param for extracting frames and getting heatmap
 - **IMPORTANT:** If you want to evaluate and get frames from multiple videos with multiple trackers AT THE SAME TIME, you must place all of your data inside your `--BENCHMARK` directory.
   
-# What is it doing  
+# What is it doing?  
   
 1. When you run the above example, `clear.py` will create some text files which contain the equivalent format to that type in the `boxdetails` folder. The format of those text files are below:  
 - For ID Switch:  
@@ -54,10 +54,10 @@ Example: 173 10 353 411 135 399 15 1335 545 49 141
 ```  
 Example: 469 1759 410 85 259 1707 405 91 258
   
-2. After that, `trackeval/extract_frame.py` uses those files to extract frames that contain, for example, FP and stores it at `output/..` folder. The `..` part is depended on your argument choices like:  
-- `square_images` containing regular FN, FP frames (choosing `EXTRACTOR`)
-- `idsw` containing frames before and after id being switched (choosing `ID_SWITCH`)
-- `heatmap` containing heatmap (choosing `HEATMAP`) 
+2. After that, `trackeval/extract_frame.py` uses those files to extract frames that contain, for example, FP and stores it at `output/<tracker>/<sequence>/..` folder. The `..` varies and depends on your argument choices:  
+- `square_images`: containing regular FN, FP frames (choosing `EXTRACTOR`)
+- `idsw`: containing frames before and after id being switched (choosing `ID_SWITCH`)
+- `heatmap`: containing heatmap (choosing `HEATMAP`) 
   
 3. Explain the meaning of images' name:
 - For images inside `idsw` folder: images are named with `X_Y_Z.jpg` format, which:

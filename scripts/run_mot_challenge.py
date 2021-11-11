@@ -117,7 +117,7 @@ if __name__ == '__main__':
                 heatmap_bool[1] = True
             elif elem == 'PRED':
                 heatmap_bool[2] = True
-            elif elem == 'IDSW':    # Son add this
+            elif elem == 'IDSW':  # Son add this
                 heatmap_bool[3] = True
             else:
                 heatmap_bool[4] = True
@@ -149,7 +149,6 @@ if __name__ == '__main__':
         extract_frame.get_heatmap(heatmap_bool)
         # Get idsw
         extract_frame.get_idsw_frame(trackeval.metrics.clear.idsw, tracker_filepath)
-
 
         # Return to initial dict
         extract_frame.filepath = extract_frame.copy_filepath.copy()

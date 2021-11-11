@@ -17,7 +17,7 @@ start_pt = 0
 code_path = get_code_path()
 filepath = {'GT_FILE': '',
             'TRACKER_FILE': '',
-            'RAW_VIDEO': 'video/{}/{}/raw.mp4',
+            'RAW_VIDEO': 'video/{}/{}.mp4',
             'FP_DETAILS': 'boxdetails/{}/{}/fp.txt',
             'FN_DETAILS': 'boxdetails/{}/{}/fn.txt',
             'IDSW_DETAILS': 'boxdetails/{}/{}/idsw.txt',
@@ -555,7 +555,7 @@ def read_tracker_file(file_path):
     Returns:
         [type]: [description]
     """
-    lines = [] #
+    lines = []
     spliter = None
     with open(file_path, 'r') as f:
         for line in f:
