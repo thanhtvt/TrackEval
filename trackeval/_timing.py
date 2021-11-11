@@ -1,5 +1,6 @@
 from functools import wraps
 from time import perf_counter
+import time
 import inspect
 
 DO_TIMING = False
@@ -7,6 +8,15 @@ DISPLAY_LESS_PROGRESS = False
 timer_dict = {}
 counter = 0
 
+def time_recorder(f):
+  @wraps(f)
+  def wrapper(*args, **kwds):
+    start = perf_counter()
+    result = f(*args, **kwds)
+    elapsed = perf_counter() - start
+    print("{} took {:.4f} sec to finish".format(f.__name__, elapsed))
+    return result
+  return wrapper
 
 def time(f):
     @wraps(f)
