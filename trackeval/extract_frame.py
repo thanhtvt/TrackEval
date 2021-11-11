@@ -5,6 +5,7 @@ import numpy as np
 from .utils import get_code_path
 from collections import defaultdict
 import imageio
+from ._timing import time_recorder
 
 """----General utils----"""
 
@@ -146,7 +147,7 @@ def get_bounding_box(image, ids_boxes, frame_no):
                                                 str(bbox_id).zfill(2))
             save_fig(directory, bounding_box, filename)
 
-
+@time_recorder
 def attach_images(images_dir, output_dir, dim):
     delete_images(output_dir)
 
@@ -234,7 +235,7 @@ def draw_rectangle(image, length, bbox, bbox_idx, color=(0, 0, 0)):
             image = cv2.rectangle(image, left_top_pt, right_bottom_pt, color, thickness)
     return image
 
-
+@time_recorder
 def get_square_frame_utils(path_to_read):
     """Get frames utils"""
     video_path = filepath['RAW_VIDEO']
@@ -285,7 +286,7 @@ def get_square_frame_utils(path_to_read):
 
     cap.release()
 
-
+@time_recorder
 def get_square_frame(detect):
     """Draw a rectangle on and write frames that contain FP boxes to chosen folder"""
 
@@ -369,7 +370,7 @@ def get_heatmap_utils(path_to_read):
     # cv2.destroyAllWindows()
     cap.release()
 
-
+@time_recorder
 def get_heatmap(heat):
     """Call this function to get heatmap of wanted type(s)"""
 
@@ -660,7 +661,7 @@ def draw_gif_all_frames(frames, start_frame, frame_tracker_groups, idsw_val):
     
     return drawn_frames
         
-
+@time_recorder
 def get_idsw_gif(idsw_gt_groups, frame_range, frame_tracker_groups):
     """Get gif images for all idsw case
 
@@ -733,7 +734,7 @@ def get_idsw_frames_utils(path_to_read, tracker_filepath):
     attach_images(filepath['IDSW_OUTPUT'], filepath['IDSW_ATTACH_OUTPUT'], (1280, 720))
     cap.release()
 
-
+@time_recorder
 def get_idsw_frame(idsw, tracker_filepath):
     """Call this function to get frames of switched ids"""
 
