@@ -36,6 +36,7 @@ import sys
 import os
 import argparse
 from multiprocessing import freeze_support
+from time import perf_counter
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import trackeval  # noqa: E402
@@ -129,6 +130,7 @@ if __name__ == '__main__':
 
     for gt_filepath, tracker_filepath, tracker_name, seq_name in dataset_list[0].get_files_loc_and_names():
         # Update filepath
+        start = perf_counter()
         for key in extract_frame.filepath.keys():
             if key == 'GT_FILE':
                 extract_frame.filepath[key] = gt_filepath
@@ -143,6 +145,9 @@ if __name__ == '__main__':
         extract_frame.seq_name = seq_name
         extract_frame.start_pt = len('boxdetails') + len(tracker_name) + len(seq_name) + len('/') * 3
 
+        print(extract_frame.filepath)
+        # frame_storage = extract_frame.read_video()
+        extract_frame.read_video()
         # Get frames
         extract_frame.get_square_frame(extr_bool)
         # Get heatmap
@@ -152,3 +157,4 @@ if __name__ == '__main__':
 
         # Return to initial dict
         extract_frame.filepath = extract_frame.copy_filepath.copy()
+        print("Elapsed time: ", perf_counter() - start)
