@@ -33,7 +33,29 @@ filepath = {'GT_FILE': '',
             'IDSW_ATTACH_OUTPUT': 'output/{}/{}/idsw/attach/'}
 copy_filepath = filepath.copy()
 
+@time_recorder
+def read_video():
+    """Read video with opencv 
 
+    Returns:
+        [dict]: Dictionay -> {"frame_idx": frame_array}
+    """
+    cap = cv2.VideoCapture(filepath['RAW_VIDEO'])
+    # frame_storage = {}
+    curr_frame = 0 
+    
+    while True:
+        ret, frame = cap.read()
+        curr_frame += 1
+        # frame_storage[curr_frame] = frame
+        if not ret:
+            break   
+         
+    cap.release()
+    # return frame_storage
+
+    
+    
 def get_default_extractor_config():
     """Default frames extractor config"""
 
@@ -109,7 +131,6 @@ def delete_images(directory):
         if file.endswith('.jpg'):
             os.remove(os.path.join(directory, file))
 
-
 def save_fig(directory, image, filename):
     os.makedirs(directory, exist_ok=True)
 
@@ -125,7 +146,8 @@ def save_fig(directory, image, filename):
         else:
             filename = temp_name
             break
-
+        
+    image = cv2.resize(image, (0, 0), fx = 0.5, fy = 0.5)
     cv2.imwrite(filename, image)
 
 
@@ -171,7 +193,7 @@ def attach_images(images_dir, output_dir, dim):
 
 """----Functions for creating square boxes----"""
 
-
+@time_recorder
 def convert_bbox_info(f_frame_len, bbox_info):
     """Convert bbox old information: <bb_left>, <bb_top>, <bb_width>, <bb_height>
     to new form to fit cv2.rectangle() inputs: <bb_left>, <bb_top>, <bb_right>, <bb_bottom>"""
@@ -261,6 +283,7 @@ def get_square_frame_utils(path_to_read):
     pred_frame_len, pred_bbox = read_file(filepath['PRED_DETAILS'])
     pred_bbox = convert_bbox_info(pred_frame_len, pred_bbox)
 
+    
     while True:
         ret, frame = cap.read()
         curr_frame += 1
@@ -275,6 +298,7 @@ def get_square_frame_utils(path_to_read):
             frame = draw_rectangle(frame, pred_length, pred_bbox, pred_bbox_idx)        # draw pred
             frame = draw_rectangle(frame, length, bbox, bbox_idx, color=(0, 0, 255))    # draw FN/FP
             frame = put_text(frame, path_to_read[11:-4].upper())
+            
 
             filename = directory + str(curr_frame) + '.jpg'
             save_fig(directory, frame, filename)
