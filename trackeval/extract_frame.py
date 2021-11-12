@@ -147,6 +147,7 @@ def get_bounding_box(image, ids_boxes, frame_no):
                                                 str(bbox_id).zfill(2))
             save_fig(directory, bounding_box, filename)
 
+
 @time_recorder
 def attach_images(images_dir, output_dir, dim):
     delete_images(output_dir)
@@ -173,8 +174,10 @@ def attach_images(images_dir, output_dir, dim):
 
 
 def convert_bbox_info(f_frame_len, bbox_info):
-    """Convert bbox old information: <bb_left>, <bb_top>, <bb_width>, <bb_height>
-    to new form to fit cv2.rectangle() inputs: <bb_left>, <bb_top>, <bb_right>, <bb_bottom>"""
+    """
+    Convert bbox old information: <bb_left>, <bb_top>, <bb_width>, <bb_height>
+    to new form to fit cv2.rectangle() inputs: <bb_left>, <bb_top>, <bb_right>, <bb_bottom>
+    """
 
     total_length = 0
     bbox = list(bbox_info)
@@ -193,7 +196,7 @@ def read_file(path):
     Output:
         - f_frame_len: A dictionary whose key is a frame index, value is a length of box info
         - bbox_info: A list containing left coordinate, top coordinate, width and height of box"""
-    
+
     f = open(path, 'r').read()
     f_frame_len = {}
     bbox_info = []
@@ -235,6 +238,7 @@ def draw_rectangle(image, length, bbox, bbox_idx, color=(0, 0, 0)):
             image = cv2.rectangle(image, left_top_pt, right_bottom_pt, color, thickness)
     return image
 
+
 @time_recorder
 def get_square_frame_utils(path_to_read):
     """Get frames utils"""
@@ -272,8 +276,8 @@ def get_square_frame_utils(path_to_read):
             length = f_frame_len.get(curr_frame)
 
             # Draw and write frames
-            frame = draw_rectangle(frame, pred_length, pred_bbox, pred_bbox_idx)        # draw pred
-            frame = draw_rectangle(frame, length, bbox, bbox_idx, color=(0, 0, 255))    # draw FN/FP
+            frame = draw_rectangle(frame, pred_length, pred_bbox, pred_bbox_idx)  # draw pred
+            frame = draw_rectangle(frame, length, bbox, bbox_idx, color=(0, 0, 255))  # draw FN/FP
             frame = put_text(frame, path_to_read[11:-4].upper())
 
             filename = directory + str(curr_frame) + '.jpg'
@@ -285,6 +289,7 @@ def get_square_frame_utils(path_to_read):
         pred_bbox_idx += pred_length
 
     cap.release()
+
 
 @time_recorder
 def get_square_frame(detect):
@@ -318,7 +323,7 @@ def create_heatmap(frame, bbox):
 
     # Create overlay
     overlay_img = np.full(frame.shape, 255, dtype=np.uint8)
-    
+
     frame = cv2.addWeighted(overlay_img, 0.4, frame, 0.6, 0)
 
     for idx in range(len(bbox)):
@@ -369,6 +374,7 @@ def get_heatmap_utils(path_to_read):
 
     # cv2.destroyAllWindows()
     cap.release()
+
 
 @time_recorder
 def get_heatmap(heat):
@@ -541,11 +547,13 @@ def draw_idsw_rectangle(image, ids_boxes, frame_no):
                                                 str(bbox_id).zfill(2))
             save_fig(directory, image_copy, filename)
 
+
 """
 author: Son
 modify: 28/9/2021
 purpose: add gif for idsw
-"""    
+"""
+
 
 def read_tracker_file(file_path):
     """Convert mot file to frame group format and mapping pred id to trackEval id
@@ -560,48 +568,52 @@ def read_tracker_file(file_path):
     spliter = None
     with open(file_path, 'r') as f:
         for line in f:
-            if(spliter is None):
-                spliter = "," if "," in line else " " 
+            if (spliter is None):
+                spliter = "," if "," in line else " "
             line = line.rstrip().split(spliter)
-            line = list(map(float, line)) # convert str to float 
-            line = list(map(int, line)) # convert to int for opencv visualine
+            line = list(map(float, line))  # convert str to float
+            line = list(map(int, line))  # convert to int for opencv visualine
             lines.append(line)
-    
+
     # group obj in frames: 
     frame_groups = defaultdict(list)
     ids_pred = set()
     for line in lines:
         ids_pred.add(line[1])
-        frame_groups[line[0]].append(line[:6]) 
-    
+        frame_groups[line[0]].append(line[:6])
+
     ids_pred = sorted(list(ids_pred))
-    idsw_mapper = {k:v for k, v in zip(ids_pred, range(len(ids_pred)))} # map from id in prediction file to id in trackeval cuz id in track eval start from 1 
-    
+    idsw_mapper = {k: v for k, v in zip(ids_pred, range(
+        len(ids_pred)))}  # map from id in prediction file to id in trackeval cuz id in track eval start from 1
+
     # print("IDSW MAPPER: ", idsw_mapper)
     # map to new id 
     for k, v in frame_groups.items():
-        obj_in_frames = [] 
+        obj_in_frames = []
         for obj in v:
-            obj[1] = idsw_mapper[obj[1]] # id index 1 
+            obj[1] = idsw_mapper[obj[1]]  # id index 1
             obj_in_frames.append(obj)
         frame_groups[k] = obj_in_frames
-        
+
     return frame_groups
+
 
 def group_obj_idsw_gt(frame_to_ids_boxes):
     idsw_gt_groups = defaultdict(list)
-    
+
     for k, v in frame_to_ids_boxes.items():
         for i in range(0, len(v), 6):
             id_gt = v[i]
-            idsw_gt_groups[id_gt].append([k, v[i+1]]) # [frame, id_pred] 
+            idsw_gt_groups[id_gt].append([k, v[i + 1]])  # [frame, id_pred]
     return idsw_gt_groups
-        
+
+
 def is_in_frame_range(frame_idx, key):
     start_frame, end_frame = list(map(int, key.split("_")))
-    if(frame_idx >= start_frame and frame_idx <= end_frame):
-        return True 
-    return False  
+    if (frame_idx >= start_frame and frame_idx <= end_frame):
+        return True
+    return False
+
 
 def draw_gif_frame(image, bbox, frame_no):
     """Draw a rectangle with given bbox info.
@@ -636,8 +648,9 @@ def draw_gif_frame(image, bbox, frame_no):
     # cv2.imshow("img", image)
     # cv2.waitKey(0)
     # cv2.destroyAllWindows() 
-    
+
     return image
+
 
 def draw_gif_all_frames(frames, start_frame, frame_tracker_groups, idsw_val):
     """Draw idsw box for all frame in gif
@@ -653,14 +666,16 @@ def draw_gif_all_frames(frames, start_frame, frame_tracker_groups, idsw_val):
     """
     drawn_frames = []
     for idx in range(len(frames)):
-        cur_objs = frame_tracker_groups[start_frame + idx] 
+        cur_objs = frame_tracker_groups[start_frame + idx]
         for obj in cur_objs:
-            if((obj[1] == idsw_val[0] and idx != len(frames)-1) or (obj[1] == idsw_val[1] and idx == len(frames)-1)):
+            if ((obj[1] == idsw_val[0] and idx != len(frames) - 1) or (
+                    obj[1] == idsw_val[1] and idx == len(frames) - 1)):
                 new_frame = draw_gif_frame(frames[idx], obj, start_frame + idx)
                 drawn_frames.append(new_frame)
-    
+
     return drawn_frames
-        
+
+
 @time_recorder
 def get_idsw_gif(idsw_gt_groups, frame_range, frame_tracker_groups):
     """Get gif images for all idsw case
@@ -671,18 +686,19 @@ def get_idsw_gif(idsw_gt_groups, frame_range, frame_tracker_groups):
         frame_tracker_groups ([type]): {"frame": [bbox1, bbox2, ...]}
     """
     gif_save_path = filepath['IDSW_GIF']
-    
+
     for id_gt, v in idsw_gt_groups.items():
         for idx in range(0, len(v), 2):
-            frame_range_key = "{start_frame}_{end_frame}".format(start_frame=v[idx][0], end_frame=v[idx+1][0])
-            idsw_val = [v[idx][1], v[idx+1][1]]
+            frame_range_key = "{start_frame}_{end_frame}".format(start_frame=v[idx][0], end_frame=v[idx + 1][0])
+            idsw_val = [v[idx][1], v[idx + 1][1]]
             drawn_frames = draw_gif_all_frames(frame_range[frame_range_key], v[idx][0], frame_tracker_groups, idsw_val)
-            gif_name = f"{v[idx][0]}_{v[idx][1]}to{v[idx+1][0]}_{v[idx+1][1]}.gif"
+            gif_name = f"{v[idx][0]}_{v[idx][1]}to{v[idx + 1][0]}_{v[idx + 1][1]}.gif"
             print(f"Number of frame {len(drawn_frames)} in {gif_name}, which is {len(frame_range[frame_range_key])}")
             imageio.mimsave(os.path.join(gif_save_path, gif_name), drawn_frames, fps=2)
-            
+
+
 # -------- end ---------   
-            
+
 def get_idsw_frames_utils(path_to_read, tracker_filepath):
     """Utils of get_idsw_frame function"""
 
@@ -692,21 +708,21 @@ def get_idsw_frames_utils(path_to_read, tracker_filepath):
 
     frame_to_ids_boxes_raw = read_idsw_file(path_to_read)
     frame_to_ids_boxes = convert_idsw_bbox_info(frame_to_ids_boxes_raw)
-    
+
     # group idsw grouthtruth 
-    idsw_gt_groups = group_obj_idsw_gt(frame_to_ids_boxes) # {"id_gt": [[frame, id_pred], ...]}
+    idsw_gt_groups = group_obj_idsw_gt(frame_to_ids_boxes)  # {"id_gt": [[frame, id_pred], ...]}
     # construct frame range to get image frame
     frame_range = {}
     frame_range_pattern = "{start_frame}_{end_frame}"
     for k, v in idsw_gt_groups.items():
         for idx in range(0, len(v) - 1, 2):
-            frame_range[frame_range_pattern.format(start_frame=v[idx][0], end_frame=v[idx+1][0])] = []            
-    # group tracker frames
-    frame_tracker_groups = read_tracker_file(tracker_filepath) # {"frame": [bbox1, bbox2, ...]}
+            frame_range[frame_range_pattern.format(start_frame=v[idx][0], end_frame=v[idx + 1][0])] = []
+            # group tracker frames
+    frame_tracker_groups = read_tracker_file(tracker_filepath)  # {"frame": [bbox1, bbox2, ...]}
     # print("frame_tracker_groups: ", frame_tracker_groups)
     # print("idsw_gt_groups: ", idsw_gt_groups)
     # print("frame_range: ", frame_range)
-    
+
     size = len(frame_to_ids_boxes)
     counter = 0
     while True:
@@ -714,25 +730,25 @@ def get_idsw_frames_utils(path_to_read, tracker_filepath):
         curr_frame += 1
         if not ret:
             break
-        
+
         for key in frame_range.keys():
             if is_in_frame_range(curr_frame, key):
                 # print(f"{curr_frame} frame in range {key}")
                 # frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                 # frame_range[key].append(frame_gray)  # tran` RAM o day`
-    
+
         if idx < size and curr_frame == list(frame_to_ids_boxes)[idx]:
             get_bounding_box(frame, frame_to_ids_boxes[curr_frame], curr_frame)
             draw_idsw_rectangle(frame, frame_to_ids_boxes[curr_frame], curr_frame)
             idx += 1
         # if(counter == 40):
         #     break
-            
 
     # get_idsw_gif(idsw_gt_groups, frame_range,frame_tracker_groups)
     attach_images(filepath['IDSW_OUTPUT'], filepath['IDSW_ATTACH_OUTPUT'], (1280, 720))
     cap.release()
+
 
 @time_recorder
 def get_idsw_frame(idsw, tracker_filepath):
@@ -751,7 +767,6 @@ def get_idsw_frame(idsw, tracker_filepath):
     os.makedirs(filepath['IDSW_ATTACH_OUTPUT'], exist_ok=True)
     os.makedirs(filepath['IDSW_BBOX_OUTPUT'], exist_ok=True)
     os.makedirs(filepath['IDSW_GIF'], exist_ok=True)
-
 
     if idsw:
         print('\nGetting ID switched frames of {}/{}...'.format(tracker_name, seq_name))
