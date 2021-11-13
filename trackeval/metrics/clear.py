@@ -105,7 +105,17 @@ class CLEAR(_BaseMetric):
 
         # Define variable storing previous t value
         old_t = 0
-
+        # Create pred_id.txt (similar format with prediction.txt but with TrackEval's ids)
+        pred_id_path = f'boxdetails/{tracker}/{seq}'
+        pred_id_path = os.path.join(code_path, pred_id_path)
+        os.makedirs(pred_id_path, exist_ok=True)
+        filepath = os.path.join(pred_id_path, 'pred_id.txt')
+        if os.path.isfile(filepath):
+            open(filepath, 'r+').truncate(0)
+        if os.path.isdir(filepath):
+            print(filepath)
+        pred_id_file = open(filepath, 'a')
+        
         # Calculate scores for each timestep
         for t, (gt_ids_t, tracker_ids_t) in enumerate(zip(data['gt_ids'], data['tracker_ids'])):
             # Deal with the case that there are no gt_det/tracker_det in a timestep.
@@ -128,7 +138,13 @@ class CLEAR(_BaseMetric):
                     fn_frames_file.write('\n')
                 gt_id_count[gt_ids_t] += 1
                 continue
-
+            
+            for i in range(len(tracker_ids_t)):
+                pred_id_file.write(str(t + 1) + ' ' + str(tracker_ids_t[i]))
+                for elem in data['tracker_dets'][t][i]:
+                    pred_id_file.write(' ' + str(elem))
+                pred_id_file.write('\n')
+                
             # Calc score matrix to first minimise IDSWs from previous frame, and then maximise MOTP secondarily
             similarity = data['similarity_scores'][t]
             score_mat = (tracker_ids_t[np.newaxis, :] == prev_timestep_tracker_id[gt_ids_t[:, np.newaxis]])
