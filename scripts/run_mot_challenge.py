@@ -145,7 +145,6 @@ if __name__ == '__main__':
         extract_frame.seq_name = seq_name
         extract_frame.start_pt = len('boxdetails') + len(tracker_name) + len(seq_name) + len('/') * 3
 
-        print(extract_frame.filepath)
         # frame_storage = extract_frame.read_video()
         # extract_frame.read_video()
         # Get frames
