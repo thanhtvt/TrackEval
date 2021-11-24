@@ -13,6 +13,7 @@ from ._timing import time_recorder
 tracker_name = ""
 seq_name = ""
 start_pt = 0
+DEFAULT_VIDEO_WRITER_SIZE = (1280, 720) # GIF VIDEO
 
 # File path storage
 code_path = get_code_path()
@@ -25,6 +26,7 @@ filepath = {'GT_FILE': '',
             'IDSW_HEAT': 'boxdetails/{}/{}/idsw_heatmap.txt',
             'GT_DETAILS': 'boxdetails/{}/{}/gt.txt',
             'PRED_DETAILS': 'boxdetails/{}/{}/pred.txt',
+            'PRED_WITH_IDS': 'boxdetails/{}/{}/pred_id.txt',
             'EXTRACTOR_OUTPUT': 'output/{}/{}/square_images/',
             'HEATMAP_OUTPUT': 'output/{}/{}/heatmap/',
             'IDSW_OUTPUT': 'output/{}/{}/idsw/',
@@ -289,8 +291,11 @@ def get_square_frame_utils(path_to_read):
         curr_frame += 1
         if not ret:
             break
-
-        pred_length = pred_frame_len.get(curr_frame)
+        
+        if(curr_frame in pred_frame_len):
+            pred_length = pred_frame_len.get(curr_frame)
+        else:
+            pred_length = 0
         if frame_idx < size and curr_frame == f_frame[frame_idx]:
             length = f_frame_len.get(curr_frame)
 
@@ -508,8 +513,6 @@ def convert_idsw_to_heatmap_format(filepath, dest_file):
 
 
 # ------------------ end ------------------
-
-
 def convert_idsw_bbox_info(frame_to_ids_boxes):
     """Similar use of convert_bbox_info() function"""
 
@@ -599,14 +602,12 @@ def read_tracker_file(file_path):
         frame_groups[line[0]].append(line[:6]) 
     
     ids_pred = sorted(list(ids_pred))
-    idsw_mapper = {k:v for k, v in zip(ids_pred, range(len(ids_pred)))} # map from id in prediction file to id in trackeval cuz id in track eval start from 1 
-    
-    # print("IDSW MAPPER: ", idsw_mapper)
+    # ERROR: co the sai o day -> tim cach xem bon TrackEval mapping id kieu gi
+    # idsw_mapper = {k:v for k, v in zip(ids_pred, range(len(ids_pred)))} # map from id in prediction file to id in trackeval cuz id in track eval start from 1 
     # map to new id 
     for k, v in frame_groups.items():
         obj_in_frames = [] 
         for obj in v:
-            obj[1] = idsw_mapper[obj[1]] # id index 1 
             obj_in_frames.append(obj)
         frame_groups[k] = obj_in_frames
         
@@ -622,7 +623,7 @@ def group_obj_idsw_gt(frame_to_ids_boxes):
     return idsw_gt_groups
         
 def is_in_frame_range(frame_idx, key):
-    start_frame, end_frame = list(map(int, key.split("_")))
+    _, start_frame, end_frame = list(map(int, key.split("_")))
     if(frame_idx >= start_frame and frame_idx <= end_frame):
         return True 
     return False  
@@ -645,7 +646,7 @@ def draw_gif_frame(image, bbox, frame_no):
     # Set up params
     left_top_pt = (bbox_left, bbox_top)
     right_bottom_pt = (bbox_right, bbox_bottom)
-    color = (255, 0, 0)
+    color = (0, 0, 255)
     thickness = 8
     org = (bbox_left, bbox_top - 5)
     font = cv2.FONT_HERSHEY_SIMPLEX
@@ -656,18 +657,13 @@ def draw_gif_frame(image, bbox, frame_no):
     cv2.rectangle(image, left_top_pt, right_bottom_pt, color, thickness)
     cv2.putText(image, str(obj_id), org, font, font_scale, color, thicknes_id, line_type)
     put_text(image, str(frame_no))
-    # test
-    # cv2.imshow("img", image)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows() 
-    
     return image
 
-def draw_gif_all_frames(frames, start_frame, frame_tracker_groups, idsw_val):
+def draw_gif_all_frames(num_frames, start_frame, frame_tracker_groups, idsw_val):
     """Draw idsw box for all frame in gif
 
     Args:
-        frames ([type]): [description]
+        num_frames ([type]): [description]
         start_frame ([type]): [description]
         frame_tracker_groups ([type]): [description]
         idsw_val ([type]): [description]
@@ -676,13 +672,14 @@ def draw_gif_all_frames(frames, start_frame, frame_tracker_groups, idsw_val):
         [list]: Frames have been drawn
     """
     drawn_frames = []
-    for idx in range(len(frames)):
+    for idx in range(num_frames):
         cur_objs = frame_tracker_groups[start_frame + idx] 
+        # print(cur_objs)
+
         for obj in cur_objs:
-            if((obj[1] == idsw_val[0] and idx != len(frames)-1) or (obj[1] == idsw_val[1] and idx == len(frames)-1)):
-                new_frame = draw_gif_frame(frames[idx], obj, start_frame + idx)
-                drawn_frames.append(new_frame)
-    
+            if((obj[1] == idsw_val[0] and idx != num_frames-1) or (obj[1] == idsw_val[1] and idx == num_frames-1)):
+                # print("frame: {}-> obj: {}".format(start_frame+idx, obj))
+                drawn_frames.append(obj)
     return drawn_frames
         
 @time_recorder
@@ -691,25 +688,51 @@ def get_idsw_gif(idsw_gt_groups, frame_range, frame_tracker_groups):
 
     Args:
         idsw_gt_groups ([type]): {"id_gt": [[frame, id_pred], ...]}
-        frame_range ([type]): {"{start_frame}_{end_frame}": []}
+        frame_range ([type]): {"{id_gt}_{start_frame}_{end_frame}": end_frame - start_frame}
         frame_tracker_groups ([type]): {"frame": [bbox1, bbox2, ...]}
     """
     gif_save_path = filepath['IDSW_GIF']
-    
+
+    idsw_info = {}
     for id_gt, v in idsw_gt_groups.items():
-        for idx in range(0, len(v), 2):
-            frame_range_key = "{start_frame}_{end_frame}".format(start_frame=v[idx][0], end_frame=v[idx+1][0])
+        for idx in range(0, len(v) - 1, 2):
+            info = {}
+            
+            frame_range_key = "{id_gt}_{start_frame}_{end_frame}".format(id_gt=id_gt, start_frame=v[idx][0], end_frame=v[idx+1][0])
             idsw_val = [v[idx][1], v[idx+1][1]]
-            drawn_frames = draw_gif_all_frames(frame_range[frame_range_key], v[idx][0], frame_tracker_groups, idsw_val)
-            gif_name = f"{v[idx][0]}_{v[idx][1]}to{v[idx+1][0]}_{v[idx+1][1]}.gif"
-            print(f"Number of frame {len(drawn_frames)} in {gif_name}, which is {len(frame_range[frame_range_key])}")
-            imageio.mimsave(os.path.join(gif_save_path, gif_name), drawn_frames, fps=2)
+            save_name = f"{v[idx][0]}_{v[idx][1]}to{v[idx+1][0]}_{v[idx+1][1]}.mp4"
             
+            info["save_path"] = os.path.join(gif_save_path, save_name)
+            info["objs"] = draw_gif_all_frames(frame_range[frame_range_key], v[idx][0], frame_tracker_groups, idsw_val)
+            idsw_info[frame_range_key] = info            
+        #     if(save_name == "6_18to20_17.mp4"):
+        #         print("stop")
+        #         break 
+        # if(save_name == "6_18to20_17.mp4"):
+        #         print("stop")
+        #         break 
+    
+    idsw_info = init_videowriter(idsw_info) # add vid_writer key
+    return idsw_info
+
+def init_videowriter(idsw_info): 
+    """Init video writer for each idsw range
+
+    Args:
+        idsw_info ([type]): {"{id_gt}_{start_frame}_{end_frame}": {"objs": "", "save_path": ...}}
+    """
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    fps = 1
+    
+    for k, v in idsw_info.items():
+        vid_writer = cv2.VideoWriter(v["save_path"], fourcc, fps, DEFAULT_VIDEO_WRITER_SIZE)
+        idsw_info[k]["vid_writer"] = vid_writer
+        
+    return idsw_info
 # -------- end ---------   
-            
+        
 def get_idsw_frames_utils(path_to_read, tracker_filepath):
     """Utils of get_idsw_frame function"""
-
     cap = cv2.VideoCapture(filepath['RAW_VIDEO'])
     curr_frame = 0
     idx = 0
@@ -719,42 +742,43 @@ def get_idsw_frames_utils(path_to_read, tracker_filepath):
     
     # group idsw grouthtruth 
     idsw_gt_groups = group_obj_idsw_gt(frame_to_ids_boxes) # {"id_gt": [[frame, id_pred], ...]}
+    
     # construct frame range to get image frame
     frame_range = {}
-    frame_range_pattern = "{start_frame}_{end_frame}"
+    frame_range_pattern = "{id_gt}_{start_frame}_{end_frame}"
     for k, v in idsw_gt_groups.items():
         for idx in range(0, len(v) - 1, 2):
-            frame_range[frame_range_pattern.format(start_frame=v[idx][0], end_frame=v[idx+1][0])] = []            
+            frame_range[frame_range_pattern.format(id_gt=k, start_frame=v[idx][0], end_frame=v[idx+1][0])] = v[idx+1][0] - v[idx][0] + 1   
+               
     # group tracker frames
-    frame_tracker_groups = read_tracker_file(tracker_filepath) # {"frame": [bbox1, bbox2, ...]}
-    # print("frame_tracker_groups: ", frame_tracker_groups)
-    # print("idsw_gt_groups: ", idsw_gt_groups)
-    # print("frame_range: ", frame_range)
+    frame_tracker_groups = read_tracker_file(filepath['PRED_WITH_IDS']) # {"frame": [bbox1, bbox2, ...]}
+    # get dict contain idsw info
+    idsw_info = get_idsw_gif(idsw_gt_groups, frame_range, frame_tracker_groups)
     
     size = len(frame_to_ids_boxes)
-    counter = 0
     while True:
         ret, frame = cap.read()
         curr_frame += 1
         if not ret:
             break
         
-        for key in frame_range.keys():
-            if is_in_frame_range(curr_frame, key):
-                # print(f"{curr_frame} frame in range {key}")
-                # frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                # frame_range[key].append(frame_gray)  # tran` RAM o day`
+        for k, v in idsw_info.items():
+            if(is_in_frame_range(curr_frame, k)):
+                if(curr_frame == 59):
+                    print(v["objs"])
+                for obj in v["objs"]: 
+                    # obj format: [frame, id, bbox]
+                    if(obj[0] == curr_frame):
+                        # print("Write: ", curr_frame)
+                        drawn_frame = draw_gif_frame(frame.copy(), obj, curr_frame)
+                        drawn_frame = cv2.resize(drawn_frame, (DEFAULT_VIDEO_WRITER_SIZE))
+                        idsw_info[k]["vid_writer"].write(drawn_frame)
     
         if idx < size and curr_frame == list(frame_to_ids_boxes)[idx]:
             get_bounding_box(frame, frame_to_ids_boxes[curr_frame], curr_frame)
             draw_idsw_rectangle(frame, frame_to_ids_boxes[curr_frame], curr_frame)
             idx += 1
-        # if(counter == 40):
-        #     break
-            
 
-    # get_idsw_gif(idsw_gt_groups, frame_range,frame_tracker_groups)
     attach_images(filepath['IDSW_OUTPUT'], filepath['IDSW_ATTACH_OUTPUT'], (1280, 720))
     cap.release()
 

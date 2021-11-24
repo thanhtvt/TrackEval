@@ -147,7 +147,7 @@ if __name__ == '__main__':
 
         print(extract_frame.filepath)
         # frame_storage = extract_frame.read_video()
-        extract_frame.read_video()
+        # extract_frame.read_video()
         # Get frames
         extract_frame.get_square_frame(extr_bool)
         # Get heatmap
